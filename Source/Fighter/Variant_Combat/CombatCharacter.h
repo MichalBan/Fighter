@@ -44,6 +44,9 @@ class ACombatCharacter : public ACharacter, public ICombatAttacker, public IComb
 	UWidgetComponent* LifeBar;
 	
 protected:
+	/** Dash Input Action */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* DashAction;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
@@ -185,12 +188,28 @@ protected:
 	/** Copy of the mesh's transform so we can reset it after ragdoll animations */
 	FTransform MeshStartingTransform;
 
+	/** movement state flag bits, packed into a uint8 for memory efficiency */
+	uint8 bHasDashed : 1;
+	uint8 bIsDashing : 1;
+
+	/** Dash montage ended delegate */
+	FOnMontageEnded OnDashMontageEnded;
+
+	/** AnimMontage to use for the Dash action */
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	UAnimMontage* DashMontage;
+
 public:
 	
 	/** Constructor */
 	ACombatCharacter();
 
 protected:
+	/** Called for dash input */
+	void Dash();
+
+	/** Called for jump input */
+	virtual void Jump() override;
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -241,6 +260,18 @@ public:
 	virtual void DoChargedAttackEnd();
 
 protected:
+
+	/** Called from a delegate when the dash montage ends */
+	void DashMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** Passes control to Blueprint to enable or disable jump trails */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Platforming")
+	void SetJumpTrailState(bool bEnabled);
+
+public:
+
+	/** Ends the dash state */
+	void EndDash();
 
 	/** Resets the character's current HP to maximum */
 	void ResetHP();

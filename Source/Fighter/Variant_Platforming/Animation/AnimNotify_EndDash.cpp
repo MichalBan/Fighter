@@ -2,16 +2,18 @@
 
 
 #include "AnimNotify_EndDash.h"
+
+#include "CombatCharacter.h"
 #include "PlatformingCharacter.h"
 #include "Components/SkeletalMeshComponent.h"
 
 void UAnimNotify_EndDash::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	// cast the owner to the attacker interface
-	if (APlatformingCharacter* PlatformingCharacter = Cast<APlatformingCharacter>(MeshComp->GetOwner()))
+	if (ACombatCharacter* CombatCharacter = Cast<ACombatCharacter>(MeshComp->GetOwner()))
 	{
 		// tell the actor to end the dash
-		PlatformingCharacter->EndDash();
+		CombatCharacter->EndDash();
 	}
 }
 

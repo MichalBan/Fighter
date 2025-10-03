@@ -20,8 +20,14 @@ ACombatCharacter::ACombatCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// initialize the flags
+	bHasDashed = false;
+	bIsDashing = false;
+
 	// bind the attack montage ended delegate
 	OnAttackMontageEnded.BindUObject(this, &ACombatCharacter::AttackMontageEnded);
+	// bind the dash montage ended delegate
+	OnDashMontageEnded.BindUObject(this, &ACombatCharacter::DashMontageEnded);
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(35.0f, 90.0f);
@@ -49,6 +55,48 @@ ACombatCharacter::ACombatCharacter()
 
 	// set the player tag
 	Tags.Add(FName("Player"));
+}
+
+void ACombatCharacter::Dash()
+{
+	// ignore the input if we've already dashed and have yet to reset
+	if (bHasDashed)
+		return;
+
+	// raise the dash flags
+	bIsDashing = true;
+	bHasDashed = true;
+
+	// disable gravity while dashing
+	GetCharacterMovement()->GravityScale = 0.0f;
+
+	// reset the character velocity so we don't carry momentum into the dash
+	GetCharacterMovement()->Velocity = FVector::ZeroVector;
+
+	// enable the jump trails
+	SetJumpTrailState(true);
+
+	// play the dash montage
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		const float MontageLength = AnimInstance->Montage_Play(DashMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+
+		// has the montage played successfully?
+		if (MontageLength > 0.0f)
+		{
+			AnimInstance->Montage_SetEndDelegate(OnDashMontageEnded, DashMontage);
+		}
+	}
+}
+
+void ACombatCharacter::Jump()
+{
+	// ignore jumps while dashing
+	if (bIsDashing)
+		return;
+
+	Super::Jump();
+	SetJumpTrailState(true);
 }
 
 void ACombatCharacter::Move(const FInputActionValue& Value)
@@ -167,6 +215,34 @@ void ACombatCharacter::DoChargedAttackEnd()
 	if (bHasLoopedChargedAttack)
 	{
 		CheckChargedAttack();
+	}
+}
+
+void ACombatCharacter::DashMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// if the montage was interrupted, end the dash
+	if (bInterrupted)
+	{
+		EndDash();
+	}
+}
+
+void ACombatCharacter::EndDash()
+{
+	// restore gravity
+	GetCharacterMovement()->GravityScale = 2.5f;
+
+	// reset the dashing flag
+	bIsDashing = false;
+
+	// are we grounded after the dash?
+	if (GetCharacterMovement()->IsMovingOnGround())
+	{
+		// reset the dash usage flag, since we won't receive a landed event
+		bHasDashed = false;
+
+		// deactivate the jump trails
+		SetJumpTrailState(false);
 	}
 }
 
@@ -471,6 +547,12 @@ void ACombatCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	// reset the dash flags
+	bHasDashed = false;
+
+	// deactivate the jump trail
+	SetJumpTrailState(false);
+
 	// is the character still alive?
 	if (CurrentHP >= 0.0f)
 	{
@@ -515,6 +597,9 @@ void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		// Dashing
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ACombatCharacter::Dash);
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
