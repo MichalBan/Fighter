@@ -33,7 +33,8 @@ ACombatCharacter::ACombatCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(35.0f, 90.0f);
 
 	// Configure character movement
-	GetCharacterMovement()->MaxWalkSpeed = 400.0f;
+	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+	GetCharacterMovement()->JumpZVelocity = 700.0f;
 
 	// create the camera boom
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -79,7 +80,8 @@ void ACombatCharacter::Dash()
 	// play the dash montage
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		const float MontageLength = AnimInstance->Montage_Play(DashMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		const float MontageLength = AnimInstance->Montage_Play(DashMontage, 1.0f, EMontagePlayReturnType::MontageLength,
+		                                                       0.0f, true);
 
 		// has the montage played successfully?
 		if (MontageLength > 0.0f)
@@ -243,6 +245,15 @@ void ACombatCharacter::EndDash()
 
 		// deactivate the jump trails
 		SetJumpTrailState(false);
+
+		// start sprint
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+		SpawnedSphere->SetActorHiddenInGame(false);
+		GetWorldTimerManager().SetTimer(SprintTimer, [this]
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+			SpawnedSphere->SetActorHiddenInGame(true);
+		}, SprintDuration, false);
 	}
 }
 
@@ -269,7 +280,8 @@ void ACombatCharacter::ComboAttack()
 	// play the attack montage
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ComboAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		const float MontageLength = AnimInstance->Montage_Play(ComboAttackMontage, 1.0f,
+		                                                       EMontagePlayReturnType::MontageLength, 0.0f, true);
 
 		// subscribe to montage completed and interrupted events
 		if (MontageLength > 0.0f)
@@ -278,7 +290,6 @@ void ACombatCharacter::ComboAttack()
 			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
 		}
 	}
-
 }
 
 void ACombatCharacter::ChargedAttack()
@@ -295,7 +306,8 @@ void ACombatCharacter::ChargedAttack()
 	// play the charged attack montage
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ChargedAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		const float MontageLength = AnimInstance->Montage_Play(ChargedAttackMontage, 1.0f,
+		                                                       EMontagePlayReturnType::MontageLength, 0.0f, true);
 
 		// subscribe to montage completed and interrupted events
 		if (MontageLength > 0.0f)
@@ -350,7 +362,8 @@ void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	if (GetWorld()->SweepMultiByObjectType(OutHits, TraceStart, TraceEnd, FQuat::Identity, ObjectParams, CollisionShape, QueryParams))
+	if (GetWorld()->SweepMultiByObjectType(OutHits, TraceStart, TraceEnd, FQuat::Identity, ObjectParams, CollisionShape,
+	                                       QueryParams))
 	{
 		// iterate over each object hit
 		for (const FHitResult& CurrentHit : OutHits)
@@ -361,7 +374,8 @@ void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
 			if (Damageable)
 			{
 				// knock upwards and away from the impact normal
-				const FVector Impulse = (CurrentHit.ImpactNormal * -MeleeKnockbackImpulse) + (FVector::UpVector * MeleeLaunchImpulse);
+				const FVector Impulse = (CurrentHit.ImpactNormal * -MeleeKnockbackImpulse) + (FVector::UpVector *
+					MeleeLaunchImpulse);
 
 				// pass the damage event to the actor
 				Damageable->ApplyDamage(MeleeDamage, this, CurrentHit.ImpactPoint, Impulse);
@@ -411,7 +425,8 @@ void ACombatCharacter::CheckChargedAttack()
 	// jump to either the loop or the attack section depending on whether we're still holding the charge button
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->Montage_JumpToSection(bIsChargingAttack ? ChargeLoopSection : ChargeAttackSection, ChargedAttackMontage);
+		AnimInstance->Montage_JumpToSection(bIsChargingAttack ? ChargeLoopSection : ChargeAttackSection,
+		                                    ChargedAttackMontage);
 	}
 }
 
@@ -436,7 +451,8 @@ void ACombatCharacter::NotifyEnemiesOfAttack()
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	if (GetWorld()->SweepMultiByObjectType(OutHits, TraceStart, TraceEnd, FQuat::Identity, ObjectParams, CollisionShape, QueryParams))
+	if (GetWorld()->SweepMultiByObjectType(OutHits, TraceStart, TraceEnd, FQuat::Identity, ObjectParams, CollisionShape,
+	                                       QueryParams))
 	{
 		// iterate over each object hit
 		for (const FHitResult& CurrentHit : OutHits)
@@ -453,7 +469,8 @@ void ACombatCharacter::NotifyEnemiesOfAttack()
 	}
 }
 
-void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
+void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation,
+                                   const FVector& DamageImpulse)
 {
 	// pass the damage event to the actor
 	FDamageEvent DamageEvent;
@@ -475,7 +492,6 @@ void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVe
 		// pass control to BP to play effects, etc.
 		ReceivedDamage(ActualDamage, DamageLocation, DamageImpulse.GetSafeNormal());
 	}
-
 }
 
 void ACombatCharacter::HandleDeath()
@@ -512,7 +528,8 @@ void ACombatCharacter::RespawnCharacter()
 	Destroy();
 }
 
-float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
+                                   AActor* DamageCauser)
 {
 	// only process damage if the character is still alive
 	if (CurrentHP <= 0.0f)
@@ -580,6 +597,13 @@ void ACombatCharacter::BeginPlay()
 
 	// reset HP to maximum
 	ResetHP();
+
+	// create sprint sphere and hide it
+	SpawnedSphere = Cast<ASprintSphere>(GetWorld()->SpawnActor(ClassSprintSphere));
+	check(SpawnedSphere)
+	SpawnedSphere->AttachToComponent(RootComponent, {EAttachmentRule::KeepRelative, false});
+	SpawnedSphere->SetActorHiddenInGame(true);
+	SpawnedSphere->SetActorEnableCollision(false);
 }
 
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -612,14 +636,18 @@ void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACombatCharacter::Look);
 
 		// Combo Attack
-		EnhancedInputComponent->BindAction(ComboAttackAction, ETriggerEvent::Started, this, &ACombatCharacter::ComboAttackPressed);
+		EnhancedInputComponent->BindAction(ComboAttackAction, ETriggerEvent::Started, this,
+		                                   &ACombatCharacter::ComboAttackPressed);
 
 		// Charged Attack
-		EnhancedInputComponent->BindAction(ChargedAttackAction, ETriggerEvent::Started, this, &ACombatCharacter::ChargedAttackPressed);
-		EnhancedInputComponent->BindAction(ChargedAttackAction, ETriggerEvent::Completed, this, &ACombatCharacter::ChargedAttackReleased);
+		EnhancedInputComponent->BindAction(ChargedAttackAction, ETriggerEvent::Started, this,
+		                                   &ACombatCharacter::ChargedAttackPressed);
+		EnhancedInputComponent->BindAction(ChargedAttackAction, ETriggerEvent::Completed, this,
+		                                   &ACombatCharacter::ChargedAttackReleased);
 
 		// Camera Side Toggle
-		EnhancedInputComponent->BindAction(ToggleCameraAction, ETriggerEvent::Triggered, this, &ACombatCharacter::ToggleCamera);
+		EnhancedInputComponent->BindAction(ToggleCameraAction, ETriggerEvent::Triggered, this,
+		                                   &ACombatCharacter::ToggleCamera);
 	}
 }
 
@@ -633,4 +661,3 @@ void ACombatCharacter::NotifyControllerChanged()
 		PC->SetRespawnTransform(GetActorTransform());
 	}
 }
-

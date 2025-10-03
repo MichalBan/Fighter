@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
+#include "SprintSphere.h"
 #include "Animation/AnimInstance.h"
 #include "CombatCharacter.generated.h"
 
@@ -198,6 +199,16 @@ protected:
 	/** AnimMontage to use for the Dash action */
 	UPROPERTY(EditAnywhere, Category = "Dash")
 	UAnimMontage* DashMontage;
+
+	/** Handling speed after dash */
+	FTimerHandle SprintTimer;
+	float BaseWalkSpeed = 500.0f;
+	float SprintSpeed = 1500.0f;
+	float SprintDuration = 1.0f;
+	UPROPERTY(EditAnywhere, Category = "Spawned")
+	TSubclassOf<ASprintSphere> ClassSprintSphere;
+	UPROPERTY(EditAnywhere)
+	ASprintSphere* SpawnedSphere = nullptr;
 
 public:
 	
