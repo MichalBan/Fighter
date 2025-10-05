@@ -274,6 +274,7 @@ protected:
 
 	/** Called from a delegate when the dash montage ends */
 	void DashMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void Sprint();
 
 	/** Passes control to Blueprint to enable or disable jump trails */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Platforming")

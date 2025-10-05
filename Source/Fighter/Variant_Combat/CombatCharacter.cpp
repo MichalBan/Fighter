@@ -229,6 +229,20 @@ void ACombatCharacter::DashMontageEnded(UAnimMontage* Montage, bool bInterrupted
 	}
 }
 
+void ACombatCharacter::Sprint()
+{
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	SpawnedSphere->SetActorHiddenInGame(false);
+	SpawnedSphere->SetActorEnableCollision(true);
+	
+	GetWorldTimerManager().SetTimer(SprintTimer, [this]
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+		SpawnedSphere->SetActorHiddenInGame(true);
+		SpawnedSphere->SetActorEnableCollision(false);
+	}, SprintDuration, false);
+}
+
 void ACombatCharacter::EndDash()
 {
 	// restore gravity
@@ -247,13 +261,7 @@ void ACombatCharacter::EndDash()
 		SetJumpTrailState(false);
 
 		// start sprint
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-		SpawnedSphere->SetActorHiddenInGame(false);
-		GetWorldTimerManager().SetTimer(SprintTimer, [this]
-		{
-			GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
-			SpawnedSphere->SetActorHiddenInGame(true);
-		}, SprintDuration, false);
+		Sprint();
 	}
 }
 
@@ -601,6 +609,7 @@ void ACombatCharacter::BeginPlay()
 	// create sprint sphere and hide it
 	SpawnedSphere = Cast<ASprintSphere>(GetWorld()->SpawnActor(ClassSprintSphere));
 	check(SpawnedSphere)
+	SpawnedSphere->SetOwner(this);
 	SpawnedSphere->AttachToComponent(RootComponent, {EAttachmentRule::KeepRelative, false});
 	SpawnedSphere->SetActorHiddenInGame(true);
 	SpawnedSphere->SetActorEnableCollision(false);
