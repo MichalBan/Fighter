@@ -44,7 +44,7 @@ protected:
 
 	/** Number of enemies to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Enemy Spawner", meta = (ClampMin = 0, ClampMax = 100))
-	int32 SpawnCount = 1;
+	int32 SpawnCount = 10;
 
 	/** Time to wait before spawning the next enemy after the current one dies */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Enemy Spawner", meta = (ClampMin = 0, ClampMax = 10))
