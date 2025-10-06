@@ -104,17 +104,19 @@ void AGuidedProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// move the projectile forward
+	// find the desired direction to face
 	FVector CurrentDirection = GetActorForwardVector();
-	SetActorLocation(GetActorLocation() + CurrentDirection * DeltaTime * Velocity);
+	FVector GoalDirection = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+
+	// find the angle to rotate by, limited by rotation speed
+	float LimitedRadian = 2 * PI * RotationSpeed * DeltaTime / 360;
+	float FullRadian = FMath::Acos(FVector::DotProduct(CurrentDirection, GoalDirection));
+	float Radian = FMath::Min(LimitedRadian, FullRadian);
 
 	// rotate towards target
-	FVector GoalDirection = (Target->GetActorLocation() - GetActorLocation() + FVector{0, 0, 10}).GetSafeNormal();
 	FVector Axis = FVector::CrossProduct(CurrentDirection, GoalDirection);
+	AddActorWorldRotation(FQuat{Axis, Radian});
 
-	// don't rotate if the angle is small
-	if (Axis.Length() > 0.1)
-	{
-		AddActorLocalRotation(FQuat{Axis, RotationSpeed * DeltaTime * 2 * PI / 360});
-	}
+	// move the projectile forward
+	SetActorLocation(GetActorLocation() + GetActorForwardVector() * DeltaTime * Velocity);
 }
