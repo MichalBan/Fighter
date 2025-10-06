@@ -142,6 +142,12 @@ protected:
 	/** Last recorded game time we were attacked */
 	float LastDangerTime = -1000.0f;
 
+	/** Last time a sprint sphere hit us */
+	float LastSphereHit;
+
+	/** Cooldown between possible hits by the sprint sphere */
+	float SphereHitCooldown = 0.25f;
+
 public:
 	/** Attack completed internal delegate to notify StateTree tasks */
 	FOnEnemyAttackCompleted OnAttackCompleted;

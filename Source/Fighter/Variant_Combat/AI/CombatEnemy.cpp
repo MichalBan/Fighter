@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "Engine/DamageEvents.h"
 #include "CombatLifeBar.h"
+#include "SprintSphere.h"
 #include "TimerManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
@@ -199,7 +200,16 @@ void ACombatEnemy::CheckChargedAttack()
 
 void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
-	
+
+	if (DamageCauser->IsA(ASprintSphere::StaticClass()))
+	{
+		float Now = GetWorld()->GetTimeSeconds();
+		if (Now < LastSphereHit + SphereHitCooldown)
+		{
+			return;
+		}
+		LastSphereHit = Now;
+	}
 	// pass the damage event to the actor
 	FDamageEvent DamageEvent;
 	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);

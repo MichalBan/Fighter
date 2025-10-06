@@ -15,6 +15,7 @@
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "CombatPlayerController.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 ACombatCharacter::ACombatCharacter()
 {
@@ -89,6 +90,9 @@ void ACombatCharacter::Dash()
 			AnimInstance->Montage_SetEndDelegate(OnDashMontageEnded, DashMontage);
 		}
 	}
+
+	// start sprint
+	Sprint();
 }
 
 void ACombatCharacter::Jump()
@@ -259,9 +263,6 @@ void ACombatCharacter::EndDash()
 
 		// deactivate the jump trails
 		SetJumpTrailState(false);
-
-		// start sprint
-		Sprint();
 	}
 }
 
@@ -610,7 +611,7 @@ void ACombatCharacter::BeginPlay()
 	SpawnedSphere = Cast<ASprintSphere>(GetWorld()->SpawnActor(ClassSprintSphere));
 	check(SpawnedSphere)
 	SpawnedSphere->SetOwner(this);
-	SpawnedSphere->AttachToComponent(RootComponent, {EAttachmentRule::KeepRelative, false});
+	SpawnedSphere->AttachToComponent(GetMesh(), {EAttachmentRule::KeepRelative, false}, "socket_sphere");
 	SpawnedSphere->SetActorHiddenInGame(true);
 	SpawnedSphere->SetActorEnableCollision(false);
 }

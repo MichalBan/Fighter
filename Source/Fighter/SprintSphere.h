@@ -29,7 +29,7 @@ protected:
 	int CollisionDamage = 1.0f;
 	/** Amount of knockback impulse a collision with the sphere will apply */
 	UPROPERTY(EditAnywhere, Category="Combat", meta = (ClampMin = 0, ClampMax = 10000, Units = "cm/s"))
-	float CollisionImpulse = 1500.0f;
+	float CollisionImpulse = 5000.0f;
 	/** Amount of upwards impulse a melee attack will apply */
 	UPROPERTY(EditAnywhere, Category = "Melee Attack|Damage", meta = (ClampMin = 0, ClampMax = 1000, Units = "cm/s"))
 	float LaunchImpulse = 500.0f;
