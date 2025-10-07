@@ -115,8 +115,10 @@ void AGuidedProjectile::Tick(float DeltaTime)
 
 	// rotate towards target
 	FVector Axis = FVector::CrossProduct(CurrentDirection, GoalDirection);
-	AddActorWorldRotation(FQuat{Axis, Radian});
+	FQuat Rotation{Axis, Radian};
+	AddActorWorldRotation(Rotation);
 
 	// move the projectile forward
-	SetActorLocation(GetActorLocation() + GetActorForwardVector() * DeltaTime * Velocity);
+	FVector Translation{GetActorForwardVector() * DeltaTime * Velocity};
+	SetActorLocation(GetActorLocation() + Translation);
 }

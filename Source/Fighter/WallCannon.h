@@ -13,8 +13,8 @@ UCLASS()
 class FIGHTER_API AWallCannon : public AActor, public ICombatActivatable
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AWallCannon();
 
@@ -25,17 +25,20 @@ protected:
 	// Handler of shot timer
 	void OnShotTimer() const;
 
+	// Handler of move timer
+	void OnMoveTimer();
+
 	// Get the spawn location for projectile
 	UFUNCTION(BlueprintImplementableEvent)
 	FVector GetProjectileLocation() const;
 
 	// Class of fired projectiles
-	UPROPERTY(EditAnywhere, Category = "Cannon")
+	UPROPERTY(EditAnywhere, Category = "Shooting")
 	TSubclassOf<AGuidedProjectile> ClassProjectile;
 
 	// Cooldown between shots
-	UPROPERTY(EditAnywhere, Category = "Cannon", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
-	float Cooldown = 5.0f;
+	UPROPERTY(EditAnywhere, Category = "Shooting", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
+	float ShotCooldown = 5.0f;
 
 	// Target that projectiles will seek
 	UPROPERTY()
@@ -47,7 +50,30 @@ protected:
 	// Timer for firing projectiles
 	FTimerHandle TimerShot;
 
-public:	
+	// Cube actor used for movement limits
+	UPROPERTY(EditAnywhere)
+	AActor* MoveArea;
+
+	// Time between trying to move
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = 5, ClampMax = 50, Units = "s"))
+	float MoveCooldown = 10.0f;
+
+	// Time between trying to move
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = 100, ClampMax = 1000, Units = "cm/s"))
+	float MoveSpeed = 500.0f;
+
+	// Timer used for movment
+	FTimerHandle TimerMove;
+
+private:
+	// Cached limits for movement
+	FVector Center;
+	FVector Bounds;
+
+	// Position the cannon tries to move to
+	FVector NextPosition = FVector::ZeroVector;
+	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -66,5 +92,4 @@ public:
 	virtual void DeactivateInteraction(AActor* ActivationInstigator) override;
 
 	// ~end IActivatable interface
-
 };
