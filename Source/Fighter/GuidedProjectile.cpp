@@ -42,6 +42,17 @@ void AGuidedProjectile::NotifyActorBeginOverlap(AActor* OtherActor)
 	Explode();
 }
 
+void AGuidedProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other,
+                                  class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation,
+                                  FVector HitNormal,
+                                  FVector NormalImpulse, const FHitResult& Hit)
+{
+	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+
+	// Explode after any collision 
+	Explode();
+}
+
 void AGuidedProjectile::OnExpireTimer()
 {
 	// Explode after timer expires
@@ -59,11 +70,10 @@ void AGuidedProjectile::Explode()
 	// no need to rotate the sphere
 	FQuat Rotation = FQuat::Identity;
 
-	// check for any collision
+	// check for collisions with damagables
 	FCollisionObjectQueryParams ObjectParams;
 	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
 	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
 
 	// use a sphere shape
 	FCollisionShape CollisionShape;

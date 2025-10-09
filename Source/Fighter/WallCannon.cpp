@@ -42,13 +42,11 @@ void AWallCannon::OnMoveTimer()
 	Offset.Y = -Bounds.Y / 2 + FMath::RandRange(0.0, Bounds.Y);
 	Offset.Z = -Bounds.Z / 2 + FMath::RandRange(0.0, Bounds.Z);
 	NextPosition = Center + Offset;
-	GEngine->AddOnScreenDebugMessage(0, 10.0f, FColor::Red, NextPosition.ToString());
 }
 
 // Called every frame
 void AWallCannon::Tick(float DeltaTime)
 {
-	GEngine->AddOnScreenDebugMessage(1, 10.0f, FColor::Blue, "Tick");
 	Super::Tick(DeltaTime);
 
 	// Don't move if we don't have a valid destination
