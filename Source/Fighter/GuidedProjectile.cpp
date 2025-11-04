@@ -42,16 +42,16 @@ void AGuidedProjectile::NotifyActorBeginOverlap(AActor* OtherActor)
 	Explode();
 }
 
-void AGuidedProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other,
-                                  class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation,
-                                  FVector HitNormal,
-                                  FVector NormalImpulse, const FHitResult& Hit)
-{
-	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-
-	// Explode after any collision 
-	Explode();
-}
+//void AGuidedProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other,
+//                                  class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation,
+//                                  FVector HitNormal,
+//                                  FVector NormalImpulse, const FHitResult& Hit)
+//{
+//	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+//
+//	// Explode after any collision 
+//	Explode();
+//}
 
 void AGuidedProjectile::OnExpireTimer()
 {
@@ -61,6 +61,12 @@ void AGuidedProjectile::OnExpireTimer()
 
 void AGuidedProjectile::Explode()
 {
+	// avoid exploding multiple times
+	if (bExploding)
+	{
+		return;
+	}
+
 	// sweep for objects in a sphere around the projectile
 	TArray<FOverlapResult> OutHits;
 
@@ -105,8 +111,12 @@ void AGuidedProjectile::Explode()
 		}
 	}
 
-	// Destroy the projectile
-	Destroy();
+	// Prepare explosion animation
+	SetActorEnableCollision(false);
+	StartScale = GetActorScale().X;
+	EndScale = ExplosionRadius / 100;
+	ExplosionTime = GetWorld()->GetTimeSeconds();
+	bExploding = true;
 }
 
 // Called every frame
@@ -114,21 +124,38 @@ void AGuidedProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// find the desired direction to face
-	FVector CurrentDirection = GetActorForwardVector();
-	FVector GoalDirection = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	if (bExploding)
+	{
+		float Alpha = (GetWorld()->GetTimeSeconds() - ExplosionTime) / ExplosionDuration;
+		if (Alpha >= 1)
+		{
+			//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, "end " + GetName());
+			Destroy();
+		}
+		else
+		{
+			float Scale = FMath::Lerp(StartScale, EndScale, Alpha);
+			SetActorScale3D({Scale, Scale, Scale});
+		}
+	}
+	else
+	{
+		// find the desired direction to face
+		FVector CurrentDirection = GetActorForwardVector();
+		FVector GoalDirection = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 
-	// find the angle to rotate by, limited by rotation speed
-	float LimitedRadian = 2 * PI * RotationSpeed * DeltaTime / 360;
-	float FullRadian = FMath::Acos(FVector::DotProduct(CurrentDirection, GoalDirection));
-	float Radian = FMath::Min(LimitedRadian, FullRadian);
+		// find the angle to rotate by, limited by rotation speed
+		float LimitedRadian = 2 * PI * RotationSpeed * DeltaTime / 360;
+		float FullRadian = FMath::Acos(FVector::DotProduct(CurrentDirection, GoalDirection));
+		float Radian = FMath::Min(LimitedRadian, FullRadian);
 
-	// rotate towards target
-	FVector Axis = FVector::CrossProduct(CurrentDirection, GoalDirection);
-	FQuat Rotation{Axis, Radian};
-	AddActorWorldRotation(Rotation);
+		// rotate towards target
+		FVector Axis = FVector::CrossProduct(CurrentDirection, GoalDirection);
+		FQuat Rotation{Axis, Radian};
+		AddActorWorldRotation(Rotation);
 
-	// move the projectile forward
-	FVector Translation{GetActorForwardVector() * DeltaTime * Velocity};
-	SetActorLocation(GetActorLocation() + Translation);
+		// move the projectile forward
+		FVector Translation{GetActorForwardVector() * DeltaTime * Velocity};
+		SetActorLocation(GetActorLocation() + Translation);
+	}
 }

@@ -24,7 +24,7 @@ protected:
 
 	// Called after collision with anything
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
+	//virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
 	
 	// Called after the projectile expires
 	void OnExpireTimer();
@@ -34,10 +34,22 @@ protected:
 
 	// Target to follow
 	UPROPERTY()
-	AActor* Target;
+	AActor* Target = nullptr;
 
 	// Timer for expiration
 	FTimerHandle TimerExpire;
+
+	// True if projectile is exploding, false otherwise
+	bool bExploding = false;
+
+	// Scale of projectile while in air (read from blueprint)
+	float StartScale;
+
+	// Scale at the end of explosion
+	float EndScale;
+
+	// Time when explosion started
+	float ExplosionTime;
 
 	// Time after which the projectile gets destroyed
 	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (ClampMin = 5, ClampMax = 50, Units = "s"))
@@ -54,12 +66,17 @@ protected:
 	float ExplosionRadius = 300.0f;
 
 	// Explosion Damage 
-	UPROPERTY(EditAnywhere, Category = "Explosion", meta = (ClampMin = 0, ClampMax = 100, Units = "cm"))
+	UPROPERTY(EditAnywhere, Category = "Explosion", meta = (ClampMin = 0, ClampMax = 100))
 	float ExplosionDamage = 1.0f;
 
 	// Explosion Knockback 
 	UPROPERTY(EditAnywhere, Category = "Explosion", meta = (ClampMin = 1000, ClampMax = 5000, Units = "cm/s"))
 	float ExplosionImpulse = 1000.0f;
+
+	// Explosion time
+	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = 0.01, ClampMax = 0.5, Units = "s"))
+	float ExplosionDuration = 0.1f;
+
 
 public:
 	// Called every frame
